@@ -4,6 +4,7 @@ import pytest
 
 from fetcher import FeedItem
 from summarizer import (
+    GeminiModel,
     SummarizedItem,
     build_summarization_prompt,
     build_insight_prompt,
@@ -97,4 +98,22 @@ def test_summarize_item_raises_on_api_failure():
     mock_model.generate_content.side_effect = Exception("API error")
 
     with pytest.raises(Exception, match="API error"):
+        summarize_item(item=item, model=mock_model)
+
+
+def test_generate_insight_raises_on_api_failure():
+    items = [make_summarized_item()]
+    mock_model = MagicMock()
+    mock_model.generate_content.side_effect = Exception("API error")
+
+    with pytest.raises(Exception, match="API error"):
+        generate_insight(items=items, model=mock_model)
+
+
+def test_summarize_item_raises_when_response_text_is_none():
+    item = make_feed_item()
+    mock_model = MagicMock()
+    mock_model.generate_content.return_value = MagicMock(text=None)
+
+    with pytest.raises(ValueError, match="no text"):
         summarize_item(item=item, model=mock_model)
