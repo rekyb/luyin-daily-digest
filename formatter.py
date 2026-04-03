@@ -62,7 +62,7 @@ def _format_top_story(index: int, item: SummarizedItem) -> dict:
 def _format_quick_links(items: list[FeedItem]) -> dict:
     assert items, "_format_quick_links must not be called with an empty list"
     lines = [f"• <{item.url}|{item.title}> · _{item.source_name}_" for item in items]
-    return _section("🔗 *QUICK LINKS*\n" + "\n".join(lines))
+    return _section("🔗 *EXTRA INSIGHTS*\n" + "\n".join(lines))
 
 
 def build_slack_message(digest: DigestContent) -> list[dict]:
@@ -72,7 +72,7 @@ def build_slack_message(digest: DigestContent) -> list[dict]:
     blocks: list[dict] = []
 
     # Header
-    blocks.append(_header(f"📰 Luyin's Daily Digest — {date_str}"))
+    blocks.append(_header(f"📰 Product and Technology Daily Digest — {date_str}"))
     blocks.append(_divider())
 
     # Top Stories
@@ -99,7 +99,7 @@ def build_slack_message(digest: DigestContent) -> list[dict]:
 
     # Footer
     blocks.append(
-        _context(f"_This digest created by Lú yīn at {time_str} WIB, {date_str}_")
+        _context(f"_This digest created at {time_str} WIB, {date_str}_")
     )
 
     return blocks
