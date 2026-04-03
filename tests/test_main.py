@@ -68,6 +68,12 @@ def test_run_digest_full_pipeline(
     run_digest()
 
     mock_post.assert_called_once()
+    # Verify summarize_item was called once per top candidate
+    assert mock_summarize.call_count == 4
+    # Verify insight was generated from the summaries
+    mock_insight.assert_called_once()
+    # Verify the digest was formatted
+    mock_format.assert_called_once()
 
 
 @patch("main.post_to_slack")
@@ -135,3 +141,11 @@ def test_run_digest_posts_fallback_on_gemini_failure(
     # Fallback digest insight should mention summaries unavailable
     digest_arg = mock_format.call_args[0][0]
     assert "unavailable" in digest_arg.insight.lower()
+
+
+@patch("main.run_digest")
+def test_handler_returns_200(mock_run_digest):
+    from main import handler
+    result = handler(event={}, context=MagicMock())
+    mock_run_digest.assert_called_once()
+    assert result == {"statusCode": 200, "body": "Digest posted"}

@@ -1,9 +1,9 @@
 import logging
+import os
 from datetime import datetime, timezone
 
 from config import load_config
 from fetcher import (
-    FeedItem,
     load_sources,
     fetch_all_sources,
     filter_recent,
@@ -23,6 +23,7 @@ from publisher import post_to_slack
 logger = logging.getLogger(__name__)
 
 MINIMUM_ITEMS_THRESHOLD = 3
+SOURCES_PATH = os.path.join(os.path.dirname(__file__), "sources.yaml")
 FALLBACK_INSIGHT = (
     "⚠️ Summaries unavailable today — Gemini API could not be reached. "
     "Headlines and links are sourced directly from RSS feeds."
@@ -34,7 +35,7 @@ def run_digest() -> None:
     model = make_gemini_model(config.gemini_api_key)
     now = datetime.now(tz=timezone.utc)
 
-    sources = load_sources()
+    sources = load_sources(SOURCES_PATH)
     raw_items = fetch_all_sources(sources)
     recent_items = filter_recent(items=raw_items, now=now, max_age_hours=24)
     unique_items = deduplicate(recent_items)
