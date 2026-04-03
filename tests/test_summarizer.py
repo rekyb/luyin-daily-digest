@@ -4,6 +4,7 @@ import pytest
 
 from fetcher import FeedItem
 from summarizer import (
+    GeminiClientAdapter,
     GeminiModel,
     SummarizedItem,
     build_summarization_prompt,
@@ -11,6 +12,7 @@ from summarizer import (
     summarize_item,
     generate_insight,
     TONE_RULES,
+    SUMMARIZATION_EXAMPLES,
 )
 
 
@@ -42,10 +44,19 @@ def test_build_summarization_prompt_contains_title_and_content():
     assert item.content in prompt
 
 
-def test_build_summarization_prompt_includes_tone_rules():
+def test_build_summarization_prompt_contains_few_shot_examples():
     item = make_feed_item()
     prompt = build_summarization_prompt(item)
-    assert TONE_RULES in prompt
+    assert SUMMARIZATION_EXAMPLES in prompt
+    assert "❌ Bad:" in prompt
+    assert "✅ Good:" in prompt
+
+
+def test_build_summarization_prompt_does_not_duplicate_tone_rules_in_body():
+    # TONE_RULES live in system_instruction, not in the prompt body
+    item = make_feed_item()
+    prompt = build_summarization_prompt(item)
+    assert TONE_RULES not in prompt
 
 
 def test_build_insight_prompt_includes_all_summaries():
@@ -60,7 +71,7 @@ def test_build_insight_prompt_includes_all_summaries():
     prompt = build_insight_prompt(items)
     assert "A 2-3 sentence summary" in prompt
     assert "Another summary" in prompt
-    assert TONE_RULES in prompt
+    assert TONE_RULES not in prompt  # tone rules live in system_instruction, not prompt body
 
 
 def test_summarize_item_returns_summarized_item():
@@ -117,3 +128,22 @@ def test_summarize_item_raises_when_response_text_is_none():
 
     with pytest.raises(ValueError, match="no text"):
         summarize_item(item=item, model=mock_model)
+
+
+def test_gemini_client_adapter_passes_system_instruction_to_api():
+    from google import genai as google_genai
+
+    mock_client = MagicMock()
+    mock_client.models.generate_content.return_value = MagicMock(text="response")
+
+    adapter = GeminiClientAdapter(
+        client=mock_client,
+        model_name="gemini-2.0-flash",
+        system_instruction=TONE_RULES,
+    )
+    adapter.generate_content("test prompt")
+
+    call_kwargs = mock_client.models.generate_content.call_args[1]
+    config = call_kwargs["config"]
+    assert isinstance(config, google_genai.types.GenerateContentConfig)
+    assert config.system_instruction == TONE_RULES

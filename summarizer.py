@@ -10,18 +10,37 @@ from fetcher import FeedItem
 logger = logging.getLogger(__name__)
 
 TONE_RULES = """
+You are a sharp, well-read human editor writing for an edtech product team's daily digest.
+
 Writing rules — follow these exactly:
-- Write like a sharp, well-read human editor. Not like AI.
+- Write like a journalist, not like an AI assistant or product marketer.
 - Banned phrases: "it's worth noting", "delve into", "in conclusion", "importantly",
   "notably", "it seems", "it appears", "as we can see", "leverage", "unlock potential",
   "game-changer", "revolutionary", "in the realm of", "navigate the landscape",
   "dive into", "crucial", "transformative", "cutting-edge", "shed light on", "foster"
 - No hedging. State facts directly. Drop qualifiers like "somewhat", "rather", "quite", "very"
 - Use em-dashes sparingly — not as a default connector
-- Vary sentence length. Mix short sentences with longer ones. Avoid uniform rhythm.
+- Vary sentence length. Mix short punchy sentences with longer ones. Avoid uniform rhythm.
 - Active voice only. Write what happened, not what "has been seen to occur"
 - No buzzword stacking (e.g., "AI-driven learning transformation ecosystems")
-- Summaries must read like a journalist wrote them, not a product description
+""".strip()
+
+SUMMARIZATION_EXAMPLES = """
+Examples of the style required:
+
+❌ Bad: "It's worth noting that this revolutionary platform is leveraging cutting-edge AI to \
+transform the educational landscape, fostering deeper student engagement and unlocking the \
+potential of personalized learning."
+✅ Good: "Duolingo replaced 10% of its contractor workforce with AI-generated content, the \
+company confirmed in an earnings call. It is one of the clearest public admissions yet that \
+generative AI has displaced knowledge workers in a consumer edtech product."
+
+❌ Bad: "The study delves into the crucial ways AI tools have been seen to improve student \
+outcomes, shedding light on the transformative role of technology in navigating the complexities \
+of modern education."
+✅ Good: "Students using AI writing feedback scored 12 points higher on standardized essays than \
+a control group in a 6-month Stanford trial — but only when teachers reviewed the AI suggestions \
+with students, not when students used the tools alone."
 """.strip()
 
 
@@ -34,14 +53,23 @@ class GeminiModel(Protocol):
 class GeminiClientAdapter:
     """Connector to the Google Gemini API. Wraps google-genai client."""
 
-    def __init__(self, client: google_genai.Client, model_name: str) -> None:
+    def __init__(
+        self,
+        client: google_genai.Client,
+        model_name: str,
+        system_instruction: str,
+    ) -> None:
         self._client = client
         self._model_name = model_name
+        self._config = google_genai.types.GenerateContentConfig(
+            system_instruction=system_instruction,
+        )
 
     def generate_content(self, prompt: str) -> object:
         return self._client.models.generate_content(
             model=self._model_name,
             contents=prompt,
+            config=self._config,
         )
 
 
@@ -55,9 +83,9 @@ class SummarizedItem:
 
 
 def build_summarization_prompt(item: FeedItem) -> str:
-    return f"""Summarize the following article in 2-3 sentences.
+    return f"""{SUMMARIZATION_EXAMPLES}
 
-{TONE_RULES}
+Now summarize the following article in 2-3 sentences using the same style as the ✅ Good examples above.
 
 Article title: {item.title}
 Article content:
@@ -70,11 +98,7 @@ def build_insight_prompt(items: list[SummarizedItem]) -> str:
     stories_text = "\n\n".join(
         f"- {item.title} ({item.source_name}): {item.summary}" for item in items
     )
-    return f"""You are writing the Insight & Advisory section of a daily digest for an edtech product team.
-
-{TONE_RULES}
-
-Here are today's top stories:
+    return f"""Write the Insight & Advisory section of today's digest based on these top stories:
 
 {stories_text}
 
@@ -83,12 +107,16 @@ Write 2-3 paragraphs that:
 2. Connect those themes to what matters for an edtech product team
 3. Close with 1-2 concrete advisory points: specific things the team might consider or watch
 
-Write in a direct, editorial voice. No intro like "Today's digest..." or "These stories show...". Start with the insight."""
+Do not open with "Today's digest...", "These stories show...", or any similar intro. Start directly with the insight."""
 
 
 def make_gemini_model(api_key: str) -> GeminiModel:
     client = google_genai.Client(api_key=api_key)
-    return GeminiClientAdapter(client=client, model_name="gemini-2.0-flash")
+    return GeminiClientAdapter(
+        client=client,
+        model_name="gemini-2.0-flash",
+        system_instruction=TONE_RULES,
+    )
 
 
 def summarize_item(item: FeedItem, model: GeminiModel) -> SummarizedItem:
