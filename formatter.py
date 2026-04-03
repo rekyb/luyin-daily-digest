@@ -16,7 +16,7 @@ class DigestContent:
     generated_at: datetime  # UTC
 
 
-def _divider() -> dict[str, str]:
+def _divider() -> dict:
     return {"type": "divider"}
 
 
