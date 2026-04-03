@@ -1,11 +1,11 @@
 from datetime import datetime, timezone, timedelta
-from unittest.mock import MagicMock, patch
-import feedparser
+from unittest.mock import patch
 import pytest
 
 from fetcher import (
     FeedItem,
     Source,
+    fetch_all_sources,
     load_sources,
     filter_recent,
     deduplicate,
@@ -88,11 +88,29 @@ def test_quota_select_enforces_domain_quotas():
     ai_top = [i for i in top if i.domain == "ai"]
     biz_top = [i for i in top if i.domain == "business"]
 
-    assert len(edutech_top) <= 4
-    assert len(ai_top) <= 2
-    assert len(biz_top) <= 1
-    assert len(top) <= 7
-    assert len(quick) <= 5
+    assert len(edutech_top) == 4   # quota is 4, we provided 6
+    assert len(ai_top) == 2        # quota is 2, we provided 4
+    assert len(biz_top) == 1       # quota is 1, we provided 3
+    assert len(top) == 7
+    assert len(quick) == 5
+
+
+def test_fetch_all_sources_continues_on_source_failure():
+    good_source = Source(name="Good", url="http://good.com/feed", domain="edutech")
+    bad_source = Source(name="Bad", url="http://bad.com/feed", domain="ai")
+
+    good_item = make_item("Good story", "http://good.com/1", "edutech")
+
+    def fake_fetch(source: Source) -> list[FeedItem]:
+        if source.name == "Bad":
+            raise ValueError("bozo feed")
+        return [good_item]
+
+    with patch("fetcher.fetch_feed", side_effect=fake_fetch):
+        result = fetch_all_sources([good_source, bad_source])
+
+    assert len(result) == 1
+    assert result[0].title == "Good story"
 
 
 def test_load_sources_returns_source_list(tmp_path):

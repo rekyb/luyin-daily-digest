@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 import feedparser
+import logging
 import yaml
 from rapidfuzz import fuzz
 
+logger = logging.getLogger(__name__)
+
 
 MAX_CONTENT_CHARS = 6000  # ~1500 tokens
-TITLE_SIMILARITY_THRESHOLD = 80  # percent, for fuzzy dedup
+TITLE_SIMILARITY_THRESHOLD = 80
 
 DOMAIN_QUOTAS: dict[str, int] = {
     "edutech": 4,
@@ -48,7 +51,9 @@ def _parse_published(entry: feedparser.FeedParserDict) -> datetime:
     )
     if struct:
         return datetime(*struct[:6], tzinfo=timezone.utc)
-    return datetime.now(tz=timezone.utc)
+    raise ValueError(
+        f"Entry has no published or updated date: {getattr(entry, 'title', 'unknown')!r}"
+    )
 
 
 def _extract_content(entry: feedparser.FeedParserDict) -> str:
@@ -62,22 +67,32 @@ def _extract_content(entry: feedparser.FeedParserDict) -> str:
 
 def fetch_feed(source: Source) -> list[FeedItem]:
     parsed = feedparser.parse(source.url)
+    if parsed.bozo:
+        raise ValueError(
+            f"Feed parse failed for {source.name!r}: {parsed.bozo_exception}"
+        )
     items: list[FeedItem] = []
     for entry in parsed.entries:
         url = getattr(entry, "link", "")
         title = getattr(entry, "title", "").strip()
         if not url or not title:
             continue
-        items.append(
-            FeedItem(
-                title=title,
-                url=url,
-                content=_extract_content(entry),
-                source_name=source.name,
-                domain=source.domain,
-                published=_parse_published(entry),
+        try:
+            items.append(
+                FeedItem(
+                    title=title,
+                    url=url,
+                    content=_extract_content(entry),
+                    source_name=source.name,
+                    domain=source.domain,
+                    published=_parse_published(entry),
+                )
             )
-        )
+        except ValueError as exc:
+            logger.warning(
+                "Skipping entry",
+                extra={"source": source.name, "title": title, "error": str(exc)},
+            )
     return items
 
 
@@ -87,7 +102,10 @@ def fetch_all_sources(sources: list[Source]) -> list[FeedItem]:
         try:
             all_items.extend(fetch_feed(source))
         except Exception as exc:
-            print(f"WARNING: failed to fetch {source.name}: {exc}")
+            logger.warning(
+                "Failed to fetch source",
+                extra={"source": source.name, "error": str(exc)},
+            )
     return all_items
 
 
@@ -113,10 +131,13 @@ def deduplicate(items: list[FeedItem]) -> list[FeedItem]:
             fuzz.ratio(item.title.lower(), seen.lower()) >= TITLE_SIMILARITY_THRESHOLD
             for seen in seen_titles
         )
+
+        # Always track the URL, even if we drop the item due to title similarity
+        seen_urls.add(item.url)
+
         if is_duplicate:
             continue
 
-        seen_urls.add(item.url)
         seen_titles.append(item.title)
         result.append(item)
 
@@ -126,10 +147,7 @@ def deduplicate(items: list[FeedItem]) -> list[FeedItem]:
 def quota_select(
     items: list[FeedItem],
 ) -> tuple[list[FeedItem], list[FeedItem]]:
-    """
-    Split items into (top_stories, quick_links) using domain quotas.
-    Items are sorted by recency within each domain bucket.
-    """
+    """Split items into (top_stories, quick_links) using domain quotas."""
     buckets: dict[str, list[FeedItem]] = {domain: [] for domain in DOMAIN_QUOTAS}
     for item in items:
         if item.domain in buckets:
