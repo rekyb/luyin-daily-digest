@@ -2,7 +2,9 @@ from dataclasses import dataclass
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+
+class ConfigurationError(ValueError):
+    pass
 
 
 @dataclass(frozen=True)
@@ -12,13 +14,24 @@ class Config:
 
 
 def load_config() -> Config:
-    gemini_api_key = os.environ.get("GEMINI_API_KEY")
-    slack_webhook_url = os.environ.get("SLACK_WEBHOOK_URL")
+    # load_dotenv is a local-dev convenience only — has no effect on Lambda
+    load_dotenv()
+
+    try:
+        gemini_api_key = os.environ["GEMINI_API_KEY"]
+    except KeyError:
+        raise ConfigurationError("GEMINI_API_KEY is not set in the environment")
 
     if not gemini_api_key:
-        raise RuntimeError("GEMINI_API_KEY environment variable is not set")
+        raise ConfigurationError("GEMINI_API_KEY is set but empty")
+
+    try:
+        slack_webhook_url = os.environ["SLACK_WEBHOOK_URL"]
+    except KeyError:
+        raise ConfigurationError("SLACK_WEBHOOK_URL is not set in the environment")
+
     if not slack_webhook_url:
-        raise RuntimeError("SLACK_WEBHOOK_URL environment variable is not set")
+        raise ConfigurationError("SLACK_WEBHOOK_URL is set but empty")
 
     return Config(
         gemini_api_key=gemini_api_key,
