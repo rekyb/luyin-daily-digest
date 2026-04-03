@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fetcher import FeedItem
 from summarizer import SummarizedItem
 
 
-WIB_OFFSET = timedelta(hours=7)
+WIB_TZ = timezone(timedelta(hours=7))
 
 
 @dataclass(frozen=True)
@@ -42,25 +42,25 @@ def _context(text: str) -> dict:
 
 
 def _format_date(dt: datetime) -> str:
-    wib_dt = dt + WIB_OFFSET
-    return wib_dt.strftime("%A, %d %B %Y")
+    return dt.astimezone(WIB_TZ).strftime("%A, %d %B %Y")
 
 
 def _format_time(dt: datetime) -> str:
-    wib_dt = dt + WIB_OFFSET
-    return wib_dt.strftime("%H:%M")
+    return dt.astimezone(WIB_TZ).strftime("%H:%M")
 
 
 def _format_top_story(index: int, item: SummarizedItem) -> dict:
+    summary = item.summary[:2800] if len(item.summary) > 2800 else item.summary
     text = (
         f"*{index}. {item.title}*\n"
-        f"{item.summary}\n"
+        f"{summary}\n"
         f"🔗 <{item.url}|{item.source_name}> · _{item.domain}_"
     )
     return _section(text)
 
 
 def _format_quick_links(items: list[FeedItem]) -> dict:
+    assert items, "_format_quick_links must not be called with an empty list"
     lines = [f"• <{item.url}|{item.title}> · _{item.source_name}_" for item in items]
     return _section("🔗 *QUICK LINKS*\n" + "\n".join(lines))
 
