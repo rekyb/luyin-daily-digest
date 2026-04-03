@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from datetime import datetime, timezone
 
 from config import load_config
@@ -13,7 +14,6 @@ from fetcher import (
 from summarizer import (
     SummarizedItem,
     make_gemini_model,
-    summarize_item,
     summarize_all_items,
     generate_insight,
 )
@@ -84,3 +84,12 @@ def handler(event: dict, context: object) -> dict:
     """AWS Lambda entry point."""
     run_digest()
     return {"statusCode": 200, "body": "Digest posted"}
+
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s — %(message)s",
+        stream=sys.stdout,
+    )
+    run_digest()
