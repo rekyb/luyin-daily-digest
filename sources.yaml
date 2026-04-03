@@ -1,0 +1,56 @@
+sources:
+  - name: "EdSurge"
+    url: "https://edsurge.com/news.rss"
+    domain: "edutech"
+
+  - name: "eLearning Industry"
+    url: "https://elearningindustry.com/feed"
+    domain: "edutech"
+
+  - name: "The Journal"
+    url: "https://thejournal.com/rss-feeds/all-articles.aspx"
+    domain: "edutech"
+
+  - name: "Mindshift (KQED)"
+    url: "https://www.kqed.org/mindshift/feed"
+    domain: "edutech"
+
+  - name: "MIT Technology Review"
+    url: "https://www.technologyreview.com/topic/learning/feed"
+    domain: "edutech"
+
+  - name: "TechCrunch AI"
+    url: "https://techcrunch.com/category/artificial-intelligence/feed/"
+    domain: "ai"
+
+  - name: "The Rundown AI"
+    url: "https://www.therundown.ai/rss"
+    domain: "ai"
+
+  - name: "Import AI"
+    url: "https://jack-clark.net/feed/"
+    domain: "ai"
+
+  - name: "Google AI Blog"
+    url: "https://blog.google/technology/ai/rss/"
+    domain: "ai"
+
+  - name: "Arxiv cs.AI"
+    url: "http://export.arxiv.org/rss/cs.AI"
+    domain: "ai"
+
+  - name: "Arxiv cs.CY"
+    url: "http://export.arxiv.org/rss/cs.CY"
+    domain: "ai"
+
+  - name: "Harvard Business Review"
+    url: "https://feeds.hbr.org/harvardbusiness"
+    domain: "business"
+
+  - name: "Product Hunt"
+    url: "https://www.producthunt.com/feed"
+    domain: "business"
+
+  - name: "Lenny's Newsletter"
+    url: "https://www.lennysnewsletter.com/feed"
+    domain: "business"
