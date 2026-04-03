@@ -37,7 +37,7 @@ def make_summarized(n: int):
 @patch("main.post_to_slack")
 @patch("main.build_slack_message")
 @patch("main.generate_insight")
-@patch("main.summarize_item")
+@patch("main.summarize_all_items")
 @patch("main.quota_select")
 @patch("main.deduplicate")
 @patch("main.filter_recent")
@@ -61,15 +61,15 @@ def test_run_digest_full_pipeline(
     mock_filter.return_value = make_feed_items(5)
     mock_dedup.return_value = make_feed_items(5)
     mock_quota.return_value = (make_feed_items(4), make_feed_items(1))
-    mock_summarize.side_effect = make_summarized(4)
+    mock_summarize.return_value = make_summarized(4)
     mock_insight.return_value = "Insight text."
     mock_format.return_value = [{"type": "section"}]
 
     run_digest()
 
     mock_post.assert_called_once()
-    # Verify summarize_item was called once per top candidate
-    assert mock_summarize.call_count == 4
+    # Verify summarize_all_items was called
+    mock_summarize.assert_called_once()
     # Verify insight was generated from the summaries
     mock_insight.assert_called_once()
     # Verify the digest was formatted
@@ -108,7 +108,7 @@ def test_run_digest_skips_post_when_too_few_items(
 @patch("main.post_to_slack")
 @patch("main.build_slack_message")
 @patch("main.generate_insight")
-@patch("main.summarize_item")
+@patch("main.summarize_all_items")
 @patch("main.quota_select")
 @patch("main.deduplicate")
 @patch("main.filter_recent")

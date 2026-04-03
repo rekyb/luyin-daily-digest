@@ -33,10 +33,11 @@ def test_check_feed_health_returns_true_for_healthy_feed():
     mock_parsed.bozo = False
     mock_parsed.entries = [MagicMock()]
 
-    with patch("audit_sources.httpx.Client") as mock_client_cls, \
-         patch("audit_sources.feedparser.parse", return_value=mock_parsed):
-        mock_client_cls.return_value.__enter__.return_value.get.return_value = mock_response
-        healthy, error = check_feed_health(make_source())
+    mock_client = MagicMock()
+    mock_client.get.return_value = mock_response
+
+    with patch("audit_sources.feedparser.parse", return_value=mock_parsed):
+        healthy, error = check_feed_health(make_source(), mock_client)
 
     assert healthy is True
     assert error == ""
@@ -47,9 +48,10 @@ def test_check_feed_health_returns_false_on_http_error():
     mock_response.status_code = 404
     mock_response.content = b""
 
-    with patch("audit_sources.httpx.Client") as mock_client_cls:
-        mock_client_cls.return_value.__enter__.return_value.get.return_value = mock_response
-        healthy, error = check_feed_health(make_source())
+    mock_client = MagicMock()
+    mock_client.get.return_value = mock_response
+
+    healthy, error = check_feed_health(make_source(), mock_client)
 
     assert healthy is False
     assert "404" in error
@@ -65,10 +67,11 @@ def test_check_feed_health_returns_false_on_bozo_with_no_entries():
     mock_parsed.bozo_exception = Exception("XML parse error")
     mock_parsed.entries = []
 
-    with patch("audit_sources.httpx.Client") as mock_client_cls, \
-         patch("audit_sources.feedparser.parse", return_value=mock_parsed):
-        mock_client_cls.return_value.__enter__.return_value.get.return_value = mock_response
-        healthy, error = check_feed_health(make_source())
+    mock_client = MagicMock()
+    mock_client.get.return_value = mock_response
+
+    with patch("audit_sources.feedparser.parse", return_value=mock_parsed):
+        healthy, error = check_feed_health(make_source(), mock_client)
 
     assert healthy is False
     assert "Parse error" in error
@@ -85,10 +88,11 @@ def test_check_feed_health_returns_true_for_bozo_feed_with_entries():
     mock_parsed.bozo_exception = Exception("minor encoding issue")
     mock_parsed.entries = [MagicMock()]
 
-    with patch("audit_sources.httpx.Client") as mock_client_cls, \
-         patch("audit_sources.feedparser.parse", return_value=mock_parsed):
-        mock_client_cls.return_value.__enter__.return_value.get.return_value = mock_response
-        healthy, error = check_feed_health(make_source())
+    mock_client = MagicMock()
+    mock_client.get.return_value = mock_response
+
+    with patch("audit_sources.feedparser.parse", return_value=mock_parsed):
+        healthy, error = check_feed_health(make_source(), mock_client)
 
     assert healthy is True
     assert error == ""
@@ -103,21 +107,21 @@ def test_check_feed_health_returns_false_for_empty_feed():
     mock_parsed.bozo = False
     mock_parsed.entries = []
 
-    with patch("audit_sources.httpx.Client") as mock_client_cls, \
-         patch("audit_sources.feedparser.parse", return_value=mock_parsed):
-        mock_client_cls.return_value.__enter__.return_value.get.return_value = mock_response
-        healthy, error = check_feed_health(make_source())
+    mock_client = MagicMock()
+    mock_client.get.return_value = mock_response
+
+    with patch("audit_sources.feedparser.parse", return_value=mock_parsed):
+        healthy, error = check_feed_health(make_source(), mock_client)
 
     assert healthy is False
     assert "empty" in error.lower()
 
 
 def test_check_feed_health_returns_false_on_network_exception():
-    with patch("audit_sources.httpx.Client") as mock_client_cls:
-        mock_client_cls.return_value.__enter__.return_value.get.side_effect = \
-            httpx.ConnectError("connection refused")
-        healthy, error = check_feed_health(make_source())
-
+    mock_client = MagicMock()
+    mock_client.get.side_effect = httpx.ConnectError("connection refused")
+    
+    healthy, error = check_feed_health(make_source(), mock_client)
     assert healthy is False
     assert "connection refused" in error.lower()
 

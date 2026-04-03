@@ -1,13 +1,17 @@
 import logging
+import concurrent.futures
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from google import genai as google_genai
 
 from fetcher import FeedItem
 
 
 logger = logging.getLogger(__name__)
+
+MAX_SUMMARIZE_WORKERS = 5
 
 TONE_RULES = """
 You are a sharp, well-read human editor writing for an edtech product team's daily digest.
@@ -119,6 +123,12 @@ def make_gemini_model(api_key: str) -> GeminiModel:
     )
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
 def summarize_item(item: FeedItem, model: GeminiModel) -> SummarizedItem:
     prompt = build_summarization_prompt(item)
     response = model.generate_content(prompt)
@@ -133,7 +143,34 @@ def summarize_item(item: FeedItem, model: GeminiModel) -> SummarizedItem:
     )
 
 
+def summarize_all_items(items: list[FeedItem], model: GeminiModel) -> list[SummarizedItem]:
+    """Summarize all items in parallel, preserving original order. Failed items are skipped."""
+    results: dict[int, SummarizedItem] = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_SUMMARIZE_WORKERS) as executor:
+        future_to_index = {
+            executor.submit(summarize_item, item, model): i
+            for i, item in enumerate(items)
+        }
+        for future in concurrent.futures.as_completed(future_to_index):
+            idx = future_to_index[future]
+            try:
+                results[idx] = future.result()
+            except Exception as exc:
+                logger.warning(
+                    "Failed to summarize item — skipping",
+                    extra={"title": items[idx].title, "error": str(exc)},
+                )
+    return [results[i] for i in sorted(results)]
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    reraise=True,
+)
 def generate_insight(items: list[SummarizedItem], model: GeminiModel) -> str:
+    if not items:
+        raise ValueError("generate_insight requires at least one summarized item")
     prompt = build_insight_prompt(items)
     response = model.generate_content(prompt)
     if not response.text:

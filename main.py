@@ -14,6 +14,7 @@ from summarizer import (
     SummarizedItem,
     make_gemini_model,
     summarize_item,
+    summarize_all_items,
     generate_insight,
 )
 from formatter import DigestContent, build_slack_message
@@ -49,9 +50,7 @@ def run_digest() -> None:
         return
 
     try:
-        top_stories: list[SummarizedItem] = [
-            summarize_item(item=item, model=model) for item in top_candidates
-        ]
+        top_stories = summarize_all_items(items=top_candidates, model=model)
         insight = generate_insight(items=top_stories, model=model)
     except Exception as exc:
         logger.warning(

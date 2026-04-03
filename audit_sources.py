@@ -20,26 +20,21 @@ MAX_LOG_LINES = 500
 logger = logging.getLogger(__name__)
 
 
-def check_feed_health(source: Source) -> tuple[bool, str]:
+def check_feed_health(source: Source, client: httpx.Client) -> tuple[bool, str]:
     """Check if a feed is accessible and returns valid entries. Returns (is_healthy, error_message)."""
     try:
-        with httpx.Client(
-            headers={"User-Agent": USER_AGENT},
-            follow_redirects=True,
-            timeout=TIMEOUT,
-        ) as client:
-            response = client.get(source.url)
-            if response.status_code != 200:
-                return False, f"HTTP {response.status_code}"
+        response = client.get(source.url)
+        if response.status_code != 200:
+            return False, f"HTTP {response.status_code}"
 
-            parsed = feedparser.parse(response.content)
-            if parsed.bozo and not parsed.entries:
-                return False, f"Parse error: {parsed.bozo_exception}"
+        parsed = feedparser.parse(response.content)
+        if parsed.bozo and not parsed.entries:
+            return False, f"Parse error: {parsed.bozo_exception}"
 
-            if not parsed.entries:
-                return False, "Feed is empty"
+        if not parsed.entries:
+            return False, "Feed is empty"
 
-            return True, ""
+        return True, ""
     except Exception as exc:
         return False, str(exc)
 
@@ -127,36 +122,41 @@ def run_audit() -> None:
     slack_alerts: list[str] = []
     any_changes = False
 
-    for source in sources:
-        is_healthy, error = check_feed_health(source)
+    with httpx.Client(
+        headers={"User-Agent": USER_AGENT},
+        follow_redirects=True,
+        timeout=TIMEOUT,
+    ) as client:
+        for source in sources:
+            is_healthy, error = check_feed_health(source, client)
 
-        if is_healthy:
-            updated_sources.append(asdict(source))
-            logger.info("Feed healthy", extra={"source": source.name})
-        else:
-            logger.warning(
-                "Feed unhealthy",
-                extra={"source": source.name, "error": error},
-            )
-            log_entries.append(
-                f"❌ FAILED: {source.name} ({source.url}) - Error: {error}"
-            )
-
-            logger.info("Requesting Gemini repair", extra={"source": source.name})
-            suggestion = ask_gemini_for_fix(source, error, model)
-
-            if suggestion:
-                updated_sources.append(suggestion)
-                msg = f"✅ REPLACED: '{source.name}' -> '{suggestion['name']}' ({suggestion['url']})"
-                logger.info("Source replaced", extra={"old": source.name, "new": suggestion["name"]})
-                log_entries.append(msg)
-                slack_alerts.append(msg)
-                any_changes = True
-            else:
+            if is_healthy:
                 updated_sources.append(asdict(source))
-                msg = f"⚠️ STAYED: Could not find replacement for {source.name}"
-                log_entries.append(msg)
-                slack_alerts.append(msg)
+                logger.info("Feed healthy", extra={"source": source.name})
+            else:
+                logger.warning(
+                    "Feed unhealthy",
+                    extra={"source": source.name, "error": error},
+                )
+                log_entries.append(
+                    f"❌ FAILED: {source.name} ({source.url}) - Error: {error}"
+                )
+
+                logger.info("Requesting Gemini repair", extra={"source": source.name})
+                suggestion = ask_gemini_for_fix(source, error, model)
+
+                if suggestion:
+                    updated_sources.append(suggestion)
+                    msg = f"✅ REPLACED: '{source.name}' -> '{suggestion['name']}' ({suggestion['url']})"
+                    logger.info("Source replaced", extra={"old": source.name, "new": suggestion["name"]})
+                    log_entries.append(msg)
+                    slack_alerts.append(msg)
+                    any_changes = True
+                else:
+                    updated_sources.append(asdict(source))
+                    msg = f"⚠️ STAYED: Could not find replacement for {source.name}"
+                    log_entries.append(msg)
+                    slack_alerts.append(msg)
 
     log_entries.append(
         f"--- Audit Finished: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---"
