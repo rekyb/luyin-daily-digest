@@ -5,3 +5,4 @@ pyyaml>=6.0.0
 rapidfuzz>=3.6.0
 python-dotenv>=1.0.0
 tenacity>=8.2.0
+functions-framework>=3.0.0

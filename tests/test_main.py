@@ -133,6 +133,7 @@ def test_run_digest_posts_fallback_on_gemini_failure(
     mock_dedup.return_value = make_feed_items(5)
     mock_quota.return_value = (make_feed_items(4), make_feed_items(1))
     mock_summarize.side_effect = Exception("Gemini API down")
+    mock_insight.side_effect = Exception("Gemini API down also")
     mock_format.return_value = [{"type": "section"}]
 
     run_digest()  # Should not raise
@@ -146,6 +147,6 @@ def test_run_digest_posts_fallback_on_gemini_failure(
 @patch("main.run_digest")
 def test_handler_returns_200(mock_run_digest):
     from main import handler
-    result = handler(event={}, context=MagicMock())
+    result = handler(request=MagicMock())
     mock_run_digest.assert_called_once()
-    assert result == {"statusCode": 200, "body": "Digest posted"}
+    assert result == ("Digest posted", 200)

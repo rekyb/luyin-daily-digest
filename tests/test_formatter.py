@@ -54,7 +54,7 @@ def test_build_slack_message_contains_header():
         for b in blocks
         if b.get("type") == "header"
     ]
-    assert any("Luyin" in t for t in header_texts)
+    assert any("Daily Digest" in t for t in header_texts)
     assert any("2026" in t for t in header_texts)
 
 
@@ -79,11 +79,11 @@ def test_build_slack_message_contains_quick_link():
     assert "Quick Link 1" in all_text
 
 
-def test_build_slack_message_contains_footer_with_luoyin():
+def test_build_slack_message_contains_footer_with_wib():
     digest = make_digest()
     blocks = build_slack_message(digest)
     all_text = " ".join(str(b) for b in blocks)
-    assert "Lú yīn" in all_text
+    assert "WIB" in all_text
 
 
 def test_build_slack_message_contains_story_url():

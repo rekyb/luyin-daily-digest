@@ -1,5 +1,4 @@
 import logging
-import concurrent.futures
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
@@ -10,8 +9,6 @@ from fetcher import FeedItem
 
 
 logger = logging.getLogger(__name__)
-
-MAX_SUMMARIZE_WORKERS = 5
 
 TONE_RULES = """
 You are a sharp, well-read human editor writing for an edtech product team's daily digest.
@@ -49,32 +46,68 @@ with students, not when students used the tools alone."
 
 
 @runtime_checkable
+class GeminiResponse(Protocol):
+    text: str | None
+
+
+@runtime_checkable
 class GeminiModel(Protocol):
-    def generate_content(self, prompt: str) -> object:
+    def generate_content(self, prompt: str) -> GeminiResponse:
         ...
 
 
+FREE_TIER_MODELS = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash-lite",
+    "gemini-3.1-flash-lite-preview",
+    "gemini-3-flash-preview",
+]
+
+
+def _is_rate_limit_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return "429" in msg or "resource exhausted" in msg or "quota" in msg or "rate limit" in msg
+
+
 class GeminiClientAdapter:
-    """Connector to the Google Gemini API. Wraps google-genai client."""
+    """Connector to the Google Gemini API. Rotates across free-tier models on 429."""
 
     def __init__(
         self,
         client: google_genai.Client,
-        model_name: str,
+        model_names: list[str],
         system_instruction: str,
     ) -> None:
         self._client = client
-        self._model_name = model_name
+        self._model_names = model_names
+        self._current = 0
         self._config = google_genai.types.GenerateContentConfig(
             system_instruction=system_instruction,
         )
 
     def generate_content(self, prompt: str) -> object:
-        return self._client.models.generate_content(
-            model=self._model_name,
-            contents=prompt,
-            config=self._config,
-        )
+        last_exc: Exception | None = None
+        for _ in range(len(self._model_names)):
+            model = self._model_names[self._current]
+            try:
+                return self._client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=self._config,
+                )
+            except Exception as exc:
+                if _is_rate_limit_error(exc):
+                    logger.warning(
+                        "Rate limit hit — rotating to next model",
+                        extra={"model": model, "error": str(exc)},
+                    )
+                    self._current = (self._current + 1) % len(self._model_names)
+                    last_exc = exc
+                    continue
+                raise
+        raise last_exc  # all models exhausted — tenacity will wait and retry
 
 
 @dataclass(frozen=True)
@@ -118,7 +151,7 @@ def make_gemini_model(api_key: str) -> GeminiModel:
     client = google_genai.Client(api_key=api_key)
     return GeminiClientAdapter(
         client=client,
-        model_name="gemini-2.0-flash",
+        model_names=FREE_TIER_MODELS,
         system_instruction=TONE_RULES,
     )
 
@@ -143,24 +176,29 @@ def summarize_item(item: FeedItem, model: GeminiModel) -> SummarizedItem:
     )
 
 
+SUMMARY_UNAVAILABLE = "Summaries unavailable today — Gemini API could not be reached. Headlines and links are sourced directly from RSS feeds."
+
+
 def summarize_all_items(items: list[FeedItem], model: GeminiModel) -> list[SummarizedItem]:
-    """Summarize all items in parallel, preserving original order. Failed items are skipped."""
-    results: dict[int, SummarizedItem] = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_SUMMARIZE_WORKERS) as executor:
-        future_to_index = {
-            executor.submit(summarize_item, item, model): i
-            for i, item in enumerate(items)
-        }
-        for future in concurrent.futures.as_completed(future_to_index):
-            idx = future_to_index[future]
-            try:
-                results[idx] = future.result()
-            except Exception as exc:
-                logger.warning(
-                    "Failed to summarize item — skipping",
-                    extra={"title": items[idx].title, "error": str(exc)},
-                )
-    return [results[i] for i in sorted(results)]
+    """Summarize items sequentially. Failed items are kept with a fallback summary."""
+    results: list[SummarizedItem] = []
+    for item in items:
+        try:
+            results.append(summarize_item(item, model))
+        except Exception as exc:
+            logger.warning(
+                "Failed to summarize item — using fallback summary",
+                extra={"title": item.title, "error": str(exc)},
+                exc_info=True,
+            )
+            results.append(SummarizedItem(
+                title=item.title,
+                url=item.url,
+                summary=SUMMARY_UNAVAILABLE,
+                source_name=item.source_name,
+                domain=item.domain,
+            ))
+    return results
 
 
 @retry(

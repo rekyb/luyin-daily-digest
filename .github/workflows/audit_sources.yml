@@ -37,21 +37,4 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add sources.yaml audit_log.txt
-          git diff --staged --quiet || git commit -m "chore: weekly source audit update"
-          git pull --rebase
-          git push
-
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Deploy updated Cloud Function
-        uses: google-github-actions/deploy-cloud-functions@v3
-        with:
-          name: luyin-daily-digest
-          region: asia-southeast1
-          runtime: python312
-          entry_point: handler
-          source_dir: .
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Automated Weekly Source Audit" && git push)

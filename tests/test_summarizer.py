@@ -7,9 +7,11 @@ from summarizer import (
     GeminiClientAdapter,
     GeminiModel,
     SummarizedItem,
+    SUMMARY_UNAVAILABLE,
     build_summarization_prompt,
     build_insight_prompt,
     summarize_item,
+    summarize_all_items,
     generate_insight,
     TONE_RULES,
     SUMMARIZATION_EXAMPLES,
@@ -130,6 +132,45 @@ def test_summarize_item_raises_when_response_text_is_none():
         summarize_item(item=item, model=mock_model)
 
 
+def test_summarize_all_items_returns_results_in_original_order():
+    items = [make_feed_item(title=f"Article {i}") for i in range(4)]
+    mock_model = MagicMock()
+    mock_model.generate_content.return_value = MagicMock(text="A summary.")
+
+    results = summarize_all_items(items=items, model=mock_model)
+
+    assert len(results) == 4
+    for i, result in enumerate(results):
+        assert result.title == f"Article {i}"
+
+
+def test_summarize_all_items_uses_fallback_summary_on_failure():
+    items = [make_feed_item(title=f"Article {i}") for i in range(3)]
+
+    def fake_generate(prompt: str) -> MagicMock:
+        if "Article 1" in prompt:
+            raise ValueError("Gemini error for item 1")
+        return MagicMock(text="Good summary.")
+
+    mock_model = MagicMock()
+    mock_model.generate_content.side_effect = fake_generate
+
+    results = summarize_all_items(items=items, model=mock_model)
+
+    assert len(results) == 3
+    assert results[0].summary == "Good summary."
+    assert results[1].title == "Article 1"
+    assert results[1].summary == SUMMARY_UNAVAILABLE
+    assert results[2].summary == "Good summary."
+
+
+def test_summarize_all_items_returns_empty_list_for_empty_input():
+    mock_model = MagicMock()
+    results = summarize_all_items(items=[], model=mock_model)
+    assert results == []
+    mock_model.generate_content.assert_not_called()
+
+
 def test_gemini_client_adapter_passes_system_instruction_to_api():
     from google import genai as google_genai
 
@@ -138,7 +179,7 @@ def test_gemini_client_adapter_passes_system_instruction_to_api():
 
     adapter = GeminiClientAdapter(
         client=mock_client,
-        model_name="gemini-2.0-flash",
+        model_names=["gemini-2.0-flash"],
         system_instruction=TONE_RULES,
     )
     adapter.generate_content("test prompt")
@@ -147,3 +188,38 @@ def test_gemini_client_adapter_passes_system_instruction_to_api():
     config = call_kwargs["config"]
     assert isinstance(config, google_genai.types.GenerateContentConfig)
     assert config.system_instruction == TONE_RULES
+
+
+def test_gemini_client_adapter_rotates_model_on_rate_limit():
+    mock_client = MagicMock()
+
+    def side_effect(**kwargs):
+        if kwargs["model"] == "model-a":
+            raise Exception("429 Resource exhausted")
+        return MagicMock(text="response")
+
+    mock_client.models.generate_content.side_effect = side_effect
+
+    adapter = GeminiClientAdapter(
+        client=mock_client,
+        model_names=["model-a", "model-b"],
+        system_instruction=TONE_RULES,
+    )
+    result = adapter.generate_content("test prompt")
+
+    assert result.text == "response"
+    last_call = mock_client.models.generate_content.call_args
+    assert last_call[1]["model"] == "model-b"
+
+
+def test_gemini_client_adapter_raises_when_all_models_rate_limited():
+    mock_client = MagicMock()
+    mock_client.models.generate_content.side_effect = Exception("429 Resource exhausted")
+
+    adapter = GeminiClientAdapter(
+        client=mock_client,
+        model_names=["model-a", "model-b"],
+        system_instruction=TONE_RULES,
+    )
+    with pytest.raises(Exception, match="429"):
+        adapter.generate_content("test prompt")
