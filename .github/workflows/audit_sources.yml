@@ -32,10 +32,10 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: python audit_sources.py
 
-      - name: Commit updated sources
+      - name: Commit updated sources (Robust Action)
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: weekly source audit update"
+          commit_message: "chore(ci): weekly source audit update [skip ci]"
           file_pattern: "sources.yaml audit_log.txt"
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"
