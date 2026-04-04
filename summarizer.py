@@ -46,16 +46,23 @@ with students, not when students used the tools alone."
 
 
 @runtime_checkable
+class GeminiResponse(Protocol):
+    text: str | None
+
+
+@runtime_checkable
 class GeminiModel(Protocol):
-    def generate_content(self, prompt: str) -> object:
+    def generate_content(self, prompt: str) -> GeminiResponse:
         ...
 
 
 FREE_TIER_MODELS = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash-lite",
     "gemini-3.1-flash-lite-preview",
     "gemini-3-flash-preview",
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
 ]
 
 
@@ -182,6 +189,7 @@ def summarize_all_items(items: list[FeedItem], model: GeminiModel) -> list[Summa
             logger.warning(
                 "Failed to summarize item — using fallback summary",
                 extra={"title": item.title, "error": str(exc)},
+                exc_info=True,
             )
             results.append(SummarizedItem(
                 title=item.title,

@@ -168,7 +168,7 @@ def run_audit() -> None:
 
     if any_changes:
         with open(SOURCES_PATH, "w", encoding="utf-8") as f:
-            yaml.dump({"sources": updated_sources}, f, sort_keys=False, allow_unicode=True)
+            yaml.dump({"sources": updated_sources}, f, sort_keys=False, allow_unicode=True, indent=2)
         logger.info("sources.yaml updated", extra={"path": SOURCES_PATH})
 
     if slack_alerts:

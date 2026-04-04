@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls C:/Users/rekyb/luyin-daily-digest-system/*.py)",
+      "Bash(gcloud version:*)",
+      "Bash(gcloud auth:*)",
+      "Bash(git:*)"
+    ]
+  }
+}

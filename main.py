@@ -49,24 +49,33 @@ def run_digest() -> None:
         )
         return
 
+    # Step 1: Summarize items
     try:
         top_stories = summarize_all_items(items=top_candidates, model=model)
-        insight = generate_insight(items=top_stories, model=model)
     except Exception as exc:
         logger.warning(
-            "Gemini API failed — posting fallback digest",
+            "summarize_all_items failed — falling back to unsummarized stories",
             extra={"error": str(exc)},
         )
         top_stories = [
             SummarizedItem(
                 title=item.title,
                 url=item.url,
-                summary="",
+                summary=FALLBACK_INSIGHT,
                 source_name=item.source_name,
                 domain=item.domain,
             )
             for item in top_candidates
         ]
+
+    # Step 2: Generate insight
+    try:
+        insight = generate_insight(items=top_stories, model=model)
+    except Exception as exc:
+        logger.warning(
+            "generate_insight failed — using fallback insight",
+            extra={"error": str(exc)},
+        )
         insight = FALLBACK_INSIGHT
 
     digest = DigestContent(
@@ -80,10 +89,10 @@ def run_digest() -> None:
     logger.info("Digest posted successfully", extra={"timestamp": now.isoformat()})
 
 
-def handler(event: dict, context: object) -> dict:
-    """AWS Lambda entry point."""
+def handler(request: object) -> tuple[str, int]:
+    """Google Cloud Functions HTTP entry point."""
     run_digest()
-    return {"statusCode": 200, "body": "Digest posted"}
+    return "Digest posted", 200
 
 
 if __name__ == "__main__":
