@@ -41,8 +41,8 @@ sources:
 - name: Hugging Face Blog
   url: https://huggingface.co/blog/feed.xml
   domain: ai
-- name: arXiv Computer Science - Artificial Intelligence
-  url: https://arxiv.org/rss/cs.AI
+- name: Google AI Blog
+  url: https://ai.googleblog.com/feeds/posts/default?alt=rss
   domain: ai
 - name: arXiv Computer Science - Computers and Society
   url: https://rss.arxiv.org/rss/cs.CY
