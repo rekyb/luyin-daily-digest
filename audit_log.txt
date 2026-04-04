@@ -1,0 +1,9 @@
+--- Audit Started: 2026-04-04 05:26:39 ---
+❌ FAILED: MIT Technology Review (https://www.technologyreview.com/topic/learning/feed) - Error: Feed is empty
+✅ REPLACED: 'MIT Technology Review' -> 'MIT Technology Review' (https://www.technologyreview.com/topic/artificial-intelligence/feed/)
+❌ FAILED: Arxiv cs.AI (http://export.arxiv.org/rss/cs.AI) - Error: Feed is empty
+✅ REPLACED: 'Arxiv cs.AI' -> 'arXiv Computer Science - Artificial Intelligence' (https://arxiv.org/rss/cs.AI)
+❌ FAILED: Arxiv cs.CY (http://export.arxiv.org/rss/cs.CY) - Error: Feed is empty
+✅ REPLACED: 'Arxiv cs.CY' -> 'arXiv Computer Science - Computers and Society' (https://rss.arxiv.org/rss/cs.CY)
+--- Audit Finished: 2026-04-04 05:26:49 ---
+

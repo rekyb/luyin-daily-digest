@@ -1,84 +1,64 @@
 sources:
-  - name: "EdSurge"
-    url: "https://www.edsurge.com/articles_rss"
-    domain: "edutech"
-
-  - name: "eLearning Industry"
-    url: "https://elearningindustry.com/feed"
-    domain: "edutech"
-
-  - name: "The Journal"
-    url: "https://thejournal.com/rss-feeds/all-articles.aspx"
-    domain: "edutech"
-
-  - name: "Mindshift (KQED)"
-    url: "https://ww2.kqed.org/mindshift/feed"
-    domain: "edutech"
-
-  - name: "MIT Technology Review"
-    url: "https://www.technologyreview.com/topic/learning/feed"
-    domain: "edutech"
-
-  - name: "EdTech Magazine"
-    url: "https://edtechmagazine.com/k12/rss.xml"
-    domain: "edutech"
-
-  - name: "Inside Higher Ed"
-    url: "https://www.insidehighered.com/rss.xml"
-    domain: "edutech"
-
-  - name: "TechCrunch AI"
-    url: "https://techcrunch.com/category/artificial-intelligence/feed/"
-    domain: "ai"
-
-  - name: "OpenAI Blog"
-    url: "https://openai.com/news/rss.xml"
-    domain: "ai"
-
-  - name: "Simon Willison"
-    url: "https://simonwillison.net/atom/entries/"
-    domain: "ai"
-
-  - name: "The Rundown AI"
-    url: "https://rss.beehiiv.com/feeds/2R3C6Bt5wj.xml"
-    domain: "ai"
-
-  - name: "Import AI"
-    url: "https://jack-clark.net/feed/"
-    domain: "ai"
-
-  - name: "Google AI Blog"
-    url: "https://blog.google/technology/ai/rss/"
-    domain: "ai"
-
-  - name: "Hugging Face Blog"
-    url: "https://huggingface.co/blog/feed.xml"
-    domain: "ai"
-
-  - name: "Arxiv cs.AI"
-    url: "http://export.arxiv.org/rss/cs.AI"
-    domain: "ai"
-
-  - name: "Arxiv cs.CY"
-    url: "http://export.arxiv.org/rss/cs.CY"
-    domain: "ai"
-
-  - name: "Harvard Business Review"
-    url: "http://feeds.harvardbusiness.org/harvardbusiness"
-    domain: "business"
-
-  - name: "The Pragmatic Engineer"
-    url: "https://newsletter.pragmaticengineer.com/feed"
-    domain: "business"
-
-  - name: "Hacker News Top"
-    url: "https://hnrss.org/frontpage?points=100"
-    domain: "business"
-
-  - name: "Product Hunt"
-    url: "https://www.producthunt.com/feed"
-    domain: "business"
-
-  - name: "Lenny's Newsletter"
-    url: "https://www.lennysnewsletter.com/feed"
-    domain: "business"
+- name: EdSurge
+  url: https://www.edsurge.com/articles_rss
+  domain: edutech
+- name: eLearning Industry
+  url: https://elearningindustry.com/feed
+  domain: edutech
+- name: The Journal
+  url: https://thejournal.com/rss-feeds/all-articles.aspx
+  domain: edutech
+- name: Mindshift (KQED)
+  url: https://ww2.kqed.org/mindshift/feed
+  domain: edutech
+- name: MIT Technology Review
+  url: https://www.technologyreview.com/topic/artificial-intelligence/feed/
+  domain: edutech
+- name: EdTech Magazine
+  url: https://edtechmagazine.com/k12/rss.xml
+  domain: edutech
+- name: Inside Higher Ed
+  url: https://www.insidehighered.com/rss.xml
+  domain: edutech
+- name: TechCrunch AI
+  url: https://techcrunch.com/category/artificial-intelligence/feed/
+  domain: ai
+- name: OpenAI Blog
+  url: https://openai.com/news/rss.xml
+  domain: ai
+- name: Simon Willison
+  url: https://simonwillison.net/atom/entries/
+  domain: ai
+- name: The Rundown AI
+  url: https://rss.beehiiv.com/feeds/2R3C6Bt5wj.xml
+  domain: ai
+- name: Import AI
+  url: https://jack-clark.net/feed/
+  domain: ai
+- name: Google AI Blog
+  url: https://blog.google/technology/ai/rss/
+  domain: ai
+- name: Hugging Face Blog
+  url: https://huggingface.co/blog/feed.xml
+  domain: ai
+- name: arXiv Computer Science - Artificial Intelligence
+  url: https://arxiv.org/rss/cs.AI
+  domain: ai
+- name: arXiv Computer Science - Computers and Society
+  url: https://rss.arxiv.org/rss/cs.CY
+  domain: ai
+- name: Harvard Business Review
+  url: http://feeds.harvardbusiness.org/harvardbusiness
+  domain: business
+- name: The Pragmatic Engineer
+  url: https://newsletter.pragmaticengineer.com/feed
+  domain: business
+- name: Hacker News Top
+  url: https://hnrss.org/frontpage?points=100
+  domain: business
+- name: Product Hunt
+  url: https://www.producthunt.com/feed
+  domain: business
+- name: Lenny's Newsletter
+  url: https://www.lennysnewsletter.com/feed
+  domain: business
