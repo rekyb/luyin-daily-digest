@@ -33,7 +33,7 @@ sources:
   url: https://rss.beehiiv.com/feeds/2R3C6Bt5wj.xml
   domain: ai
 - name: Import AI
-  url: https://jack-clark.net/feed/
+  url: https://importai.substack.com/feed
   domain: ai
 - name: Google AI Blog
   url: https://blog.google/technology/ai/rss/
@@ -42,7 +42,7 @@ sources:
   url: https://huggingface.co/blog/feed.xml
   domain: ai
 - name: Google AI Blog
-  url: https://ai.googleblog.com/feeds/posts/default?alt=rss
+  url: https://blog.google/technology/ai/rss/
   domain: ai
 - name: arXiv Computer Science - Computers and Society
   url: https://rss.arxiv.org/rss/cs.CY
