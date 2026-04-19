@@ -33,7 +33,7 @@ sources:
   url: https://rss.beehiiv.com/feeds/2R3C6Bt5wj.xml
   domain: ai
 - name: Google AI Blog
-  url: https://ai.googleblog.com/feeds/posts/default
+  url: https://blog.google/technology/ai/feed/
   domain: ai
 - name: Google AI Blog
   url: https://blog.google/technology/ai/rss/
@@ -45,7 +45,7 @@ sources:
   url: https://blog.google/technology/ai/rss/
   domain: ai
 - name: arXiv Computer Science - Computers and Society
-  url: https://arxiv.org/atom/cs.CY
+  url: https://arxiv.org/rss/cs.CY
   domain: ai
 - name: Harvard Business Review
   url: http://feeds.harvardbusiness.org/harvardbusiness
