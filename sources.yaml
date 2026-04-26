@@ -33,7 +33,7 @@ sources:
   url: https://rss.beehiiv.com/feeds/2R3C6Bt5wj.xml
   domain: ai
 - name: Google AI Blog
-  url: https://blog.google/technology/ai/feed/
+  url: https://ai.googleblog.com/feeds/posts/default
   domain: ai
 - name: Google AI Blog
   url: https://blog.google/technology/ai/rss/
